@@ -44,6 +44,7 @@ ${MODEL_NAME}#${WEIGHT_FORMAT}#${SYM_LABEL}#g_${GROUP_SIZE}#ov#${DEVICE}.json
 Run once (adjust Python path if needed). 
 
 ```bash
+cd src
 chmod +x setup.sh
 ./setup.sh
 ```
@@ -71,7 +72,7 @@ chmod +x export-models.sh
 # Default exports to ov-models directory
 ./export-models.sh 2>&1 | tee export-models-log.log
 # OR pass the export dir
-./export-models.sh ov-models-test 2>&1 | tee export-models-log.log
+# ./export-models.sh ov-models-test 2>&1 | tee export-models-log.log
 ```
 
 ---
