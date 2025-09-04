@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
-"""Aggregate benchmark JSON files (standalone, no wrapper dependency).
+"""Aggregate benchmark JSON files into a CSV summary.
+
+Automatically invoked by run-llm-bench-batch.py after benchmark runs complete.
 
 Filename convention:
   ${MODEL_NAME}#${WEIGHT_FORMAT}#${SYM_LABEL}#g_${GROUP_SIZE}#ov#${DEVICE}.json
 
-python bench_aggregate.py --reports-dir benchmark-reports-20250904-145700/
+python generate-bench-summary.py --reports-dir benchmark-reports-20250904-145700/
 
 """
 import argparse, csv, json, os, sys
 from typing import Dict, Any, List
 
-EXPECTED_SEGMENTS = 6 # MODEL_NAME, WEIGHT_FORMAT, SYM_LABEL, g_<GROUP_SIZE>, ov, DEVICE
+EXPECTED_SEGMENTS = 6
 
 
 def parse_filename(filename: str):
@@ -49,10 +51,10 @@ def extract_metrics(data: Dict[str, Any]):
         'second_infer_avg_latency': avg.get('second_infer_avg_latency'),
         'tokenization_time': avg.get('tokenization_time'),
         'detokenization_time': avg.get('detokenization_time'),
+        'compile_time_sec': perf.get('compile_time')
     }
 
 
-# Output CSV column order and names
 COLUMNS = [
     'model_name', 'weight_format', 'sym_label', 'group_size', 'framework', 'device',
     'input_tokens', 'output_tokens', 'compile_time (ms)',
@@ -72,21 +74,21 @@ def aggregate(directory: str) -> List[Dict[str, Any]]:
         except Exception as e:
             print(f"[warn] skip (name) {fname}: {e}", file=sys.stderr)
             continue
+        data_path = os.path.join(directory, fname)
         try:
-            with open(os.path.join(directory, fname), 'r', encoding='utf-8') as f:
+            with open(data_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             metrics = extract_metrics(data)
         except Exception as e:
             print(f"[warn] skip (json) {fname}: {e}", file=sys.stderr)
             continue
-        
         second_infer_avg_latency = metrics.get('second_infer_avg_latency')
         if second_infer_avg_latency and second_infer_avg_latency > 0:
             throughput = 1000.0 / second_infer_avg_latency
         else:
             throughput = None
-    
-        compile_time_ms = (data.get('perfdata') or {}).get('compile_time')
+        compile_time_sec = metrics.get('compile_time_sec')
+        compile_time_ms = compile_time_sec * 1000.0 if isinstance(compile_time_sec, (int, float)) else None
         row = {
             'model_name': meta['model_name'],
             'weight_format': meta['weight_format'],
@@ -112,7 +114,7 @@ def aggregate(directory: str) -> List[Dict[str, Any]]:
 
 
 def main():
-    ap = argparse.ArgumentParser(description='Aggregate benchmark JSON into CSV.')
+    ap = argparse.ArgumentParser(description='Generate benchmark CSV summary from JSON reports.')
     ap.add_argument('--reports-dir', required=True)
     ap.add_argument('--output', help='Defaults to <reports-dir>.csv')
     args = ap.parse_args()
@@ -132,10 +134,9 @@ def main():
         w.writeheader()
         for r in rows:
             w.writerow(r)
-    print(f"Wrote {len(rows)} row(s) -> {out}")
+    print(f"Wrote {len(rows)} row(s) -> {os.path.abspath(out)}")
     return 0
 
 
 if __name__ == '__main__':
     sys.exit(main())
-

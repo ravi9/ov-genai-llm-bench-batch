@@ -19,7 +19,7 @@ This repository layout provides a reproducible workflow to:
 | `export-models.sh` | Batch exports HF models into OpenVINO IR (quantized variants) using `optimum-cli export openvino` |
 | `create-prompts.py` | Builds a fixed length (`N` tokens) prompt JSONL inside each model folder |
 | `run-llm-bench-batch.py` | Standalone batch benchmark driver (calls upstream benchmark.py) |
-| `bench_aggregate.py` | Standalone aggregation of JSON results to CSV |
+| `generate-bench-summary.py` | Standalone aggregation of JSON results to CSV (auto-runs after benchmarks) |
 | `benchmark-reports-<timestamp>/` | Auto-created directory containing per‑model JSON (or CSV) benchmark outputs |
 
 Exported model directory naming convention (produced by `export-models.sh`):
@@ -34,8 +34,7 @@ Benchmark output file naming convention (added device + extension):
 ${MODEL_NAME}#${WEIGHT_FORMAT}#${SYM_LABEL}#g_${GROUP_SIZE}#ov#${DEVICE}.json
 ```
 
-`bench_aggregate.py` splits on `#` and emits columns:
-`model_name, weight_format, sym_label, group_size, framework, device, input_size, infer_count, generation_time, latency, ...`
+`generate-bench-summary.py` auto-runs after a benchmark session (and can be run manually) to split filenames on `#` and emit a CSV summary.
 
 ---
 
@@ -157,7 +156,7 @@ Contains fields:
 From repo root:
 
 ```bash
-python bench_aggregate.py --reports-dir benchmark-reports-20250903-230104
+python generate-bench-summary.py --reports-dir benchmark-reports-20250903-230104
 ```
 
 Outputs (by default):
@@ -187,7 +186,7 @@ python create-prompts.py --models-root ov-models --prompt-length 64 --device CPU
 # Full benchmark
 python run-llm-bench-batch.py --models-root ov-models --benchmark -pf prompt_64_tokens.jsonl --bench-iters 3 --all-devices
 # Aggregate results. Replace `<timestamp>` with the actual directory printed during benchmarking.
-python bench_aggregate.py --reports-dir benchmark-reports-<timestamp>
+python generate-bench-summary.py --reports-dir benchmark-reports-<timestamp>
 ```
 
 ---

@@ -154,6 +154,19 @@ def main():
                                 ef.write('\n')
                     except Exception as log_e:
                         print(f"[warn] Could not write failure log: {log_e}", file=sys.stderr)
+        # Attempt automatic summary generation
+        summary_script = os.path.join(os.path.dirname(__file__), 'generate-bench-summary.py')
+        if os.path.isfile(summary_script):
+            print(f"\nGenerating aggregate CSV summary...")
+            try:
+                proc = subprocess.run([sys.executable, summary_script, '--reports-dir', reports_root], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                print(proc.stdout)
+                if proc.returncode != 0:
+                    print(f"[warn] Summary generation failed (exit {proc.returncode})", file=sys.stderr)
+            except Exception as e:
+                print(f"[warn] Exception during summary generation: {e}", file=sys.stderr)
+        else:
+            print("[info] Summary script generate-bench-summary.py not found; skipping CSV summary.")
     else:
         for d in model_dirs:
             name = os.path.basename(d)
