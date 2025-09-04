@@ -3,9 +3,9 @@
 This repository layout provides a reproducible workflow to:
 
 1. Create an isolated Python environment with [OpenVINO GenAI](https://github.com/openvinotoolkit/openvino.genai/tree/master/tools/llm_bench) + [Optimum-Intel](https://huggingface.co/docs/optimum/main/en/intel/installation)
-2. Export Hugging Face LLMs to OpenVINO IR with quantization / group size variants
+2. Export Hugging Face LLMs to OpenVINO IR with quantization/group size variants
 3. Smoke‑test exported model directories (simple text generation)
-4. Generate fixed length prompt files per model for consistent benchmarking
+4. Generate fixed-length prompt files per model for consistent benchmarking
 5. Run multi‑model, multi‑device performance benchmarks (CPU / GPU / NPU)
 6. Aggregate JSON benchmark outputs into a consolidated CSV report
 7. (Optional) Fast subset iteration with `--limit-models` for quick validation
@@ -64,7 +64,7 @@ source ov-genai-env/bin/activate
 ---
 ## 2. Export Models
 
-* Edit `export-models.sh` to add more MODEL_IDS / group sizes / weight formats.
+* Edit `export-models.sh` to add more MODEL_IDS / group sizes/weight formats.
 * Exported models saved in `ov-models/` (change `OUT_DIR_ROOT` in the script if desired).
 
 ```bash
@@ -87,7 +87,7 @@ python run-llm-bench-batch.py --models-root ov-models \
   --prompt "The goal of AI is "
 ```
 
-This prints a truncated sample output per model (and per device if multiple specified). Failures (load/generation errors) are counted and summarized.
+This prints a truncated sample output per model (and per device if multiple are specified). Failures (load/generation errors) are counted and summarized.
 
 Speed up quick validations during development by limiting how many model directories are processed:
 
@@ -106,7 +106,7 @@ python run-llm-bench-batch.py --models-root ov-models \
 Generates a JSONL like `prompt_64_tokens.jsonl` inside every valid model folder.
 
 ```bash
-python create-prompts.py --models-root ov-models-test --prompt-length 64 --device CPU
+python create-prompts.py --models-root ov-models --prompt-length 64
 ```
 
 Resulting file per model: `prompt_<N>_tokens.jsonl` with structure:
@@ -124,7 +124,7 @@ From repo root:
 
 ```bash
 python run-llm-bench-batch.py \
-  --models-root ov-models-test \
+  --models-root ov-models \
   --benchmark \
   -pf prompt_64_tokens.jsonl \
   --bench-iters 3 \
@@ -140,7 +140,7 @@ Key options:
 * Report directory auto-created: `benchmark-reports-<timestamp>/`
 * `--report-format json|csv` (default json)
 
-Each successful run produces one JSON (or CSV) per model/device.
+Each successful run produces one JSON file (or CSV file) per model/device.
 
 Example produced file:
 ```
@@ -181,11 +181,11 @@ Warnings are printed for malformed filenames or JSON structures and those files 
 source ov-genai-env/bin/activate
 ./export-models.sh
 # Smoke test (no benchmark)
-python run-llm-bench-batch.py --models-root ov-models-test --devices CPU --prompt "The goal of AI is " --max-new-tokens 32
+python run-llm-bench-batch.py --models-root ov-models --devices CPU --prompt "The goal of AI is " --max-new-tokens 32
 # Create fixed-length prompts for benchmarking
-python create-prompts.py --models-root ov-models-test --prompt-length 64 --device CPU
+python create-prompts.py --models-root ov-models --prompt-length 64 --device CPU
 # Full benchmark
-python run-llm-bench-batch.py --models-root ov-models-test --benchmark -pf prompt_64_tokens.jsonl --bench-iters 3 --all-devices
+python run-llm-bench-batch.py --models-root ov-models --benchmark -pf prompt_64_tokens.jsonl --bench-iters 3 --all-devices
 # Aggregate results. Replace `<timestamp>` with the actual directory printed during benchmarking.
 python bench_aggregate.py --reports-dir benchmark-reports-<timestamp>
 ```
@@ -213,15 +213,15 @@ python bench_aggregate.py --reports-dir benchmark-reports-<timestamp>
 ---
 ## 10. Quick Subset Runs (`--limit-models`)
 
-When prototyping changes (e.g., adjusting prompt length, verifying new export parameters), running the entire model matrix can be slow. Use:
+When prototyping changes (e.g., adjusting prompt length or verifying new export parameters), running the entire model matrix can be time-consuming. Use:
 
 ```bash
-python run-llm-bench-batch.py --models-root ov-models-test --benchmark -pf prompt_64_tokens.jsonl \
+python run-llm-bench-batch.py --models-root ov-models --benchmark -pf prompt_64_tokens.jsonl \
   --bench-iters 2 --devices CPU,GPU --limit-models 1
 ```
 
 Notes:
-* Ordering is deterministic (sorted directory names); to test a specific model ensure its name sorts early or temporarily move it to a separate root.
+* Ordering is deterministic (sorted directory names); to test a specific model, ensure its name sorts early or temporarily move it to a separate root.
 * The reported summary still reflects only the processed subset.
 * Combine with fewer `--bench-iters` for even faster smoke performance validation of the benchmark pipeline.
 
