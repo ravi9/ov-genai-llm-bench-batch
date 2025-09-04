@@ -2,7 +2,7 @@
 
 This repository layout provides a reproducible workflow to:
 
-1. Create an isolated Python environment with [OpenVINO GenAI](https://github.com/openvinotoolkit/openvino.genai/tree/master/tools/llm_bench) + Optimum-Intel (https://huggingface.co/docs/optimum/main/en/intel/installation)
+1. Create an isolated Python environment with [OpenVINO GenAI](https://github.com/openvinotoolkit/openvino.genai/tree/master/tools/llm_bench) + [Optimum-Intel](https://huggingface.co/docs/optimum/main/en/intel/installation)
 2. Export Hugging Face LLMs to OpenVINO IR with quantization / group size variants
 3. Smoke‑test exported model directories (simple text generation)
 4. Generate fixed length prompt files per model for consistent benchmarking
