@@ -11,33 +11,26 @@ This repository layout provides a reproducible workflow to:
 7. (Optional) Fast subset iteration with `--limit-models` for quick validation
 
 ---
-## Directory / File Overview
+## Quick Start Guide
 
-| File | Purpose |
-|------|---------|
-| `setup.sh` | Creates virtualenv, installs dependencies (PyTorch CPU wheels, optimum-intel, openvino-genai, llm_bench requirements) |
-| `export-models.sh` | Batch exports HF models into OpenVINO IR (quantized variants) using `optimum-cli export openvino` |
-| `create-prompts.py` | Builds a fixed length (`N` tokens) prompt JSONL inside each model folder |
-| `run-llm-bench-batch.py` | Standalone batch benchmark driver (calls upstream benchmark.py) |
-| `generate-bench-summary.py` | Standalone aggregation of JSON results to CSV (auto-runs after benchmarks) |
-| `benchmark-reports-<timestamp>/` | Auto-created directory containing per‑model JSON (or CSV) benchmark outputs |
-
-Exported model directory naming convention (produced by `export-models.sh`):
-
+```bash
+cd src
+# One-time and first-time setup
+chmod +x setup.sh && ./setup.sh
+# For subsequent runs, just activate py env
+source ov-genai-env/bin/activate
+./export-models.sh
+# Smoke test (no benchmark)
+python run-llm-bench-batch.py --models-root ov-models --devices CPU --prompt "The goal of AI is " --max-new-tokens 32
+# Create fixed-length prompts for benchmarking
+python create-prompts.py --models-root ov-models --prompt-length 64 --device CPU
+# Full benchmark
+python run-llm-bench-batch.py --models-root ov-models --benchmark -pf prompt_64_tokens.jsonl --bench-iters 3 --all-devices
+# (Optional) generate-bench-summary.py runs automatically after run-llm-bench-batch.py. 
+# Aggregate results. Replace `<timestamp>` with the actual directory printed during benchmarking.
+python generate-bench-summary.py --reports-dir benchmark-reports-<timestamp>
 ```
-${MODEL_NAME}#${WEIGHT_FORMAT}#${SYM_LABEL}#g_${GROUP_SIZE}#ov
-```
-
-Benchmark output file naming convention (added device + extension):
-
-```
-${MODEL_NAME}#${WEIGHT_FORMAT}#${SYM_LABEL}#g_${GROUP_SIZE}#ov#${DEVICE}.json
-```
-
-`generate-bench-summary.py` auto-runs after a benchmark session (and can be run manually) to split filenames on `#` and emit a CSV summary.
-
 ---
-
 ## 1. Environment Setup
 
 Run once (adjust Python path if needed). 
@@ -174,22 +167,6 @@ first_infer_latency,second_infer_avg_latency,tokenization_time,detokenization_ti
 Warnings are printed for malformed filenames or JSON structures and those files are skipped.
 
 ---
-## 7. Typical End-to-End Session
-
-```bash
-source ov-genai-env/bin/activate
-./export-models.sh
-# Smoke test (no benchmark)
-python run-llm-bench-batch.py --models-root ov-models --devices CPU --prompt "The goal of AI is " --max-new-tokens 32
-# Create fixed-length prompts for benchmarking
-python create-prompts.py --models-root ov-models --prompt-length 64 --device CPU
-# Full benchmark
-python run-llm-bench-batch.py --models-root ov-models --benchmark -pf prompt_64_tokens.jsonl --bench-iters 3 --all-devices
-# Aggregate results. Replace `<timestamp>` with the actual directory printed during benchmarking.
-python generate-bench-summary.py --reports-dir benchmark-reports-<timestamp>
-```
-
----
 ## 8. Customization Tips
 
 * Add more models: edit `MODEL_IDS` in `export-models.sh`.
@@ -229,5 +206,31 @@ Notes:
 * Add Markdown summary generation from CSV
 * Track git commit + environment metadata inside each JSON / CSV row
 * Add charts (latency vs group size)
+
+---
+## Directory / File Overview
+
+| File | Purpose |
+|------|---------|
+| `setup.sh` | Creates virtualenv, installs dependencies (PyTorch CPU wheels, optimum-intel, openvino-genai, llm_bench requirements) |
+| `export-models.sh` | Batch exports HF models into OpenVINO IR (quantized variants) using `optimum-cli export openvino` |
+| `create-prompts.py` | Builds a fixed length (`N` tokens) prompt JSONL inside each model folder |
+| `run-llm-bench-batch.py` | Standalone batch benchmark driver (calls upstream benchmark.py) |
+| `generate-bench-summary.py` | Standalone aggregation of JSON results to CSV (auto-runs after benchmarks) |
+| `benchmark-reports-<timestamp>/` | Auto-created directory containing per‑model JSON (or CSV) benchmark outputs |
+
+Exported model directory naming convention (produced by `export-models.sh`):
+
+```
+${MODEL_NAME}#${WEIGHT_FORMAT}#${SYM_LABEL}#g_${GROUP_SIZE}#ov
+```
+
+Benchmark output file naming convention (added device + extension):
+
+```
+${MODEL_NAME}#${WEIGHT_FORMAT}#${SYM_LABEL}#g_${GROUP_SIZE}#ov#${DEVICE}.json
+```
+
+`generate-bench-summary.py` auto-runs after a benchmark session (and can be run manually) to split filenames on `#` and emit a CSV summary.
 
 ---
